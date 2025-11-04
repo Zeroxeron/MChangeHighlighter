@@ -3,22 +3,17 @@ package org.kiva.mchangehighlighter.client;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.BufferRenderer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.gl.ShaderProgramKeys;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
@@ -37,7 +32,7 @@ public class MchangehighlighterClient implements ClientModInitializer {
     // Corrected regex pattern per your note
     private static final Pattern COORD_PATTERN = Pattern.compile("\\(x(-?\\d+)/y(-?\\d+)/z(-?\\d+)(?:/([^)]*))?\\)");
     private static final Pattern BLOCK_PATTERN = Pattern.compile("(?:placed|broke)\\s+(\\w+)");
-    private static final List<HighlightEntry> ENTRIES = new CopyOnWriteArrayList<>();
+    private static List<HighlightEntry> ENTRIES = new CopyOnWriteArrayList<>();
     // event history to pair actions and coordinates robustly
     private static final Deque<ChatEvent> EVENT_HISTORY = new ArrayDeque<>();
     private static final int MAX_HISTORY = 256;
@@ -51,19 +46,27 @@ public class MchangehighlighterClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         loadConfig();
-        // register keybind (default X)
-        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, "key.category.mchangehighlighter"));
-        // clear keybind (default Z)
-        clearKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.clear", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, "key.category.mchangehighlighter"));
+        // KBinds
+        //  toggle keybind (default X)
+        //  clear keybind (default Z)
+        KeyBinding.Category kb_category = new KeyBinding.Category(Identifier.of("key.category.mchangehighlighter"));
+        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, kb_category));
+        clearKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.clear", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, kb_category));
         System.out.println("[MCH]: registered chat!");
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> tryParseAndAdd(message.getString())); // listen for chat messages
-        WorldRenderEvents.LAST.register(context -> {if (!enabled) return; renderAll(context);}); // world render - draw at the end of world rendering pass
+        WorldRenderEvents.END_MAIN.register(context -> {if (!enabled) return; renderAll(context);}); // world render - draw at the end of world rendering pass
         // client tick to toggle and user feedback
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (toggleKey.wasPressed()) {
                 enabled = !enabled;
                 if (client.player == null) {return;}
                 client.inGameHud.getChatHud().addMessage(Text.literal("MChangeHighlighter: " + (enabled ? "enabled" : "disabled")));
+                if (enabled) {
+                    System.out.println("Rendering for "+ENTRIES.size()+" entries:");
+                    for (HighlightEntry e : ENTRIES) {
+                        System.out.println(" "+e.action +" "+e.blockName+" "+e.pos.toString());
+                    }
+                }
             }
             if (clearKey.wasPressed()) {
                 ENTRIES.clear();
@@ -132,21 +135,28 @@ public class MchangehighlighterClient implements ClientModInitializer {
         EVENT_HISTORY.addLast(e);
         if (EVENT_HISTORY.size() > MAX_HISTORY) EVENT_HISTORY.removeFirst();
         coordinator();
+        removeDupes();
+    }
+    private static void removeDupes() {
+        Set<String> seenEntries = new HashSet<>();
+        List<HighlightEntry> unique = new ArrayList<>();
+        for (HighlightEntry e : ENTRIES) {
+            if (seenEntries.add(e.pos.toString())) {
+                unique.add(e);
+            }
+        }
+        ENTRIES = unique;
     }
 
     /** Completes the render queue **/
     private static void coordinator() {
         ChatEvent current = null;
-        ChatEvent prev = null;
         HighlightEntry last_he = null;
         BlockPos last_coords = null;
         List<HighlightEntry> actions_list = new ArrayList<>();
         for (Iterator<ChatEvent> it = EVENT_HISTORY.descendingIterator(); it.hasNext(); ) {
-            prev = current;
             current = it.next();
-            if (prev == null) continue;
             if (current == null) return;
-            if (Objects.equals(prev, current)) continue;
             if (Objects.equals(current.type, ChatEvent.Type.POST_COORD)) {
                 Matcher coord = COORD_PATTERN.matcher(current.raw);
                 if (!coord.find()) continue;
@@ -160,6 +170,7 @@ public class MchangehighlighterClient implements ClientModInitializer {
             // PRE -------
             if (Objects.equals(current.type, ChatEvent.Type.PRE_CORD)) {
                 Matcher coord = COORD_PATTERN.matcher(current.raw);
+                if (!coord.find()) continue;
                 int x = Integer.parseInt(coord.group(1));
                 int y = Integer.parseInt(coord.group(2));
                 int z = Integer.parseInt(coord.group(3));
@@ -214,64 +225,29 @@ public class MchangehighlighterClient implements ClientModInitializer {
         }
     }
     // ----------------------------- Rendering -----------------------------
-    private static void renderAll(net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext context) {
-        Vec3d cam = context.camera().getPos();
-        double camX = cam.x;
-        double camY = cam.y;
-        double camZ = cam.z;
-
-        // Ensure correct shader is set for POSITION_COLOR vertex format
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-
-        Tessellator tess = Tessellator.getInstance();
-        BufferBuilder buf = tess.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-
-        Matrix4f mat = context.matrixStack().peek().getPositionMatrix();
-        int[] vertexCount = new int[] {0}; // local vertex counter (int[] used as mutable holder)
-        for (HighlightEntry e : ENTRIES) {
-            int rgb = resolveColorForEntry(e) & 0xFFFFFF;
-            int argb = 0xFF000000 | rgb; // opaque ARGB expected by BufferBuilder.color(int)
-
-            double x = e.pos.getX();
-            double y = e.pos.getY();
-            double z = e.pos.getZ();
-
-            float x1 = (float) (x - camX);
-            float y1 = (float) (y - camY);
-            float z1 = (float) (z - camZ);
-            float x2 = x1 + 1.0f;
-            float y2 = y1 + 1.0f;
-            float z2 = z1 + 1.0f;
-
-            // 12 edges of the unit cube
-            addLine(buf, mat, x1, y1, z1, x2, y1, z1, argb, vertexCount);
-            addLine(buf, mat, x1, y1, z1, x1, y2, z1, argb, vertexCount);
-            addLine(buf, mat, x1, y1, z1, x1, y1, z2, argb, vertexCount);
-
-            addLine(buf, mat, x2, y2, z2, x1, y2, z2, argb, vertexCount);
-            addLine(buf, mat, x2, y2, z2, x2, y1, z2, argb, vertexCount);
-            addLine(buf, mat, x2, y2, z2, x2, y2, z1, argb, vertexCount);
-
-            addLine(buf, mat, x1, y2, z1, x2, y2, z1, argb, vertexCount);
-            addLine(buf, mat, x1, y2, z1, x1, y2, z2, argb, vertexCount);
-
-            addLine(buf, mat, x1, y1, z2, x2, y1, z2, argb, vertexCount);
-            addLine(buf, mat, x1, y1, z2, x1, y2, z2, argb, vertexCount);
-            addLine(buf, mat, x2, y1, z1, x2, y2, z1, argb, vertexCount);
-            addLine(buf, mat, x2, y1, z2, x2, y2, z2, argb, vertexCount);
-        }
-
-        // Draw the built buffer with the global shader (set with RenderSystem.setShader)
-        if (vertexCount[0] < 1) {return;}
-        BufferRenderer.drawWithGlobalProgram(buf.end());
+    private static void renderAll(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext context) {
+        Vec3d cam = context.gameRenderer().getCamera().getPos();
+        Matrix4f matrices = context.matrices().peek().getPositionMatrix();
+        VertexConsumerProvider consumers = context.consumers();
+        if (consumers == null) {return;}
+        VertexConsumer vc = consumers.getBuffer(RenderLayer.getLines());
+        if (ENTRIES.isEmpty()) return;
+        for (HighlightEntry e : ENTRIES) {loadOutlinesVc(vc, matrices, cam, e);}
+        context.gameRenderer().render(RenderTickCounter.ONE,false);
     }
-
-    private static void addLine(BufferBuilder buf, Matrix4f mat, float x1, float y1, float z1, float x2, float y2, float z2, int argb, int[] vertexCount) {
-        // use the chained API: vertex(matrix, x, y, z).color(int)
-        buf.vertex(mat, x1, y1, z1).color(argb);
-        buf.vertex(mat, x2, y2, z2).color(argb);
-        vertexCount[0] += 2;
+    private static void loadOutlinesVc(VertexConsumer vc, Matrix4f mat, Vec3d cam, HighlightEntry e) {
+        float x1 = (float) (e.pos.getX() - cam.x); float y1 = (float) (e.pos.getY() - cam.y); float z1 = (float) (e.pos.getZ() - cam.z);
+        float x2 = x1 + 1.0f;   float y2 = y1 + 1.0f;   float z2 = z1 + 1.0f;
+        float[][] c = new float[][] {{x1, y1, z1}, {x2, y1, z1}, {x2, y2, z1}, {x1, y2, z1}, {x1, y1, z2}, {x2, y1, z2}, {x2, y2, z2}, {x1, y2, z2}}; // corners
+        int[][] edges = {{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4}, {0,4},{1,5},{2,6},{3,7}};
+        int rgb = resolveColorForEntry(e) & 0xFFFFFF;
+        int argb = 0xFF000000 | rgb; // opaque ARGB expected by BufferBuilder.color(int)
+        float nx = 0f, ny = 1f, nz = 0f;
+        for (int[] ed : edges) {
+            float[] a0 = c[ed[0]]; float[] a1 = c[ed[1]];
+            vc.vertex(mat, a0[0], a0[1], a0[2]).color(argb).normal(nx, ny, nz);
+            vc.vertex(mat, a1[0], a1[1], a1[2]).color(argb).normal(nx, ny, nz);
+        }
     }
 
     // ----------------------------- Helper for colors -----------------------------
