@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "mchangehighlighter",
+  "version": "${version}",
+  "name": "MChangeHighlighter",
+  "description": "Visualize the CoreProtect!",
+  "authors": [],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.kiva.mchangehighlighter.client.MchangehighlighterClient"
+    ],
+    "main": [
+      "org.kiva.mchangehighlighter.Mchangehighlighter"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": ">=${minecraft_version}"
+  }
+}
