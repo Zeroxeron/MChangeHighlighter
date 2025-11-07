@@ -1,0 +1,20 @@
+{
+  "mchangehighlighter.config.title": "MCH Configuration",
+  "mchangehighlighter.config.categories.main.name": "Main Configuration",
+  "mchangehighlighter.config.categories.main.tooltip": "",
+  "mchangehighlighter.config.categories.main.options.enabled.name": "Enabled",
+  "mchangehighlighter.config.categories.main.options.enabled.description": "Enable or disable the mod completely.",
+  "mchangehighlighter.config.categories.main.options.distance.name": "Distance Value",
+  "mchangehighlighter.config.categories.main.options.distance.description": "How far is the render distance.",
+  "mchangehighlighter.config.categories.main.options.opacity.name": "Outline opacity",
+  "mchangehighlighter.config.categories.main.options.opacity.description": "How visible are outlines.",
+  "mchangehighlighter.config.categories.main.options.togglekey": "Configure your keybindings for toggling the render. Currently: %d",
+  "mchangehighlighter.config.categories.main.options.togglekey.notice": "Note: The keybinding told above is not updated until you reopen this screen.",
+  "mchangehighlighter.config.categories.main.options.clearkey": "Configure your keybindings for cleaning the collected data. Currently set to: %d",
+  "mchangehighlighter.config.categories.main.options.clearkey.notice": "Note: The keybinding told above is not updated until you reopen this screen.",
+  "mchangehighlighter.config.categories.main.options.open-controls.name": "Open Keybindings",
+  "mchangehighlighter.config.categories.main.options.open-controls.description": "Open the controls menu to configure the keybindings.",
+  "key.mchangehighlighter.togglekey": "Toggle MCH",
+  "key.mchangehighlighter.clearKey": "Clear Data",
+  "category.mchangehighlighter.main": "Change Highlighter"
+}

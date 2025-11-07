@@ -4,8 +4,8 @@ plugins {
     id 'fabric-loom' version '1.13.3'
 }
 
-group = project.property('maven_group')
 version = project.property('mod_version')
+group = project.property('maven_group')
 archivesBaseName = project.property('archives_base_name')
 
 java {
@@ -17,10 +17,10 @@ java {
 sourceSets {
     main {
         java {
-            srcDirs = ['src/main/java', 'src/client/java']
+            srcDirs = ['common/src/main/java', 'fabric/src/main/java/']
         }
         resources {
-            srcDirs = ['src/main/resources']
+            srcDirs = ['fabric/src/main/resources', 'common/src/main/resources']
         }
     }
 }
@@ -28,6 +28,10 @@ sourceSets {
 repositories {
     mavenCentral()
     maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = "https://jitpack.io" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots"}
+    maven { url "https://maven.terraformersmc.com/releases/" }
+    maven { url "https://maven.isxander.dev/releases"}
 }
 
 dependencies {
@@ -35,6 +39,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    modApi("com.terraformersmc:modmenu:${project.modmenu_version}")
+    modImplementation 'dev.isxander:yet-another-config-lib:3.8.0+1.21.9-fabric'
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -43,6 +50,9 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 jar {
+    from("LICENSE") {
+        rename { "${it}_${archivesName}" }
+    }
     manifest {
         attributes(
                 'Specification-Title': archivesBaseName,
@@ -56,7 +66,6 @@ processResources {
     inputs.property "version", project.version
     inputs.property "loader_version", project.loader_version
     inputs.property "minecraft_version", project.minecraft_version
-
     filesMatching("fabric.mod.json") {
         expand([
                 version: project.version,
