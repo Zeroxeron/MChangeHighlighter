@@ -16,7 +16,6 @@ package org.kiva.mchangehighlighter;
 import com.google.gson.annotations.SerializedName;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
-import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
@@ -29,7 +28,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 public class MConfig {
@@ -67,11 +65,11 @@ public class MConfig {
     }
 
     @SerialEntry
-    public static boolean enabled = false;
+    public static boolean enabled = true;
     @SerialEntry
-    public static double defaultOpacity = 0.9;
+    public static boolean toggled_seethrough = false;
     @SerialEntry
-    public static int defaultDistance = 50;
+    public static int defaultDistance = 512;
 
     public static Screen openConfigScreen(Screen parent) {
         return YetAnotherConfigLib.createBuilder()
@@ -81,18 +79,17 @@ public class MConfig {
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.translatable("mchangehighlighter.config.categories.main.options.enabled.name"))
                                 .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.options.enabled.description")))
-                                .binding(false, () -> MConfig.enabled, MChangeHighlighter::setEnabled)
+                                .binding(MConfig.enabled, () -> MConfig.enabled, MChangeHighlighter::setEnabled)
                                 .controller(opt -> BooleanControllerBuilder.create(opt)
                                         .coloured(true)
                                         .yesNoFormatter())
                                 .build())
-                        .option(Option.<Double>createBuilder()
-                                .name(Text.translatable("mchangehighlighter.config.categories.main.options.opacity.name"))
-                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.options.opacity.description")))
-                                .binding(0.9, () -> MConfig.defaultOpacity, newVal -> MConfig.defaultOpacity = newVal)
-                                .controller(opt -> DoubleSliderControllerBuilder.create(opt)
-                                        .range(0.0, 1.0)
-                                        .step(0.1))
+                        .option(Option.<Boolean>createBuilder()
+                                .name(Text.translatable("key.keyTransparent"))
+                                .binding(MConfig.toggled_seethrough, () -> MConfig.toggled_seethrough, MChangeHighlighter::setTransparent)
+                                .controller(opt -> BooleanControllerBuilder.create(opt)
+                                        .coloured(true)
+                                        .yesNoFormatter())
                                 .build())
                         .option(Option.<Integer>createBuilder()
                                 .name(Text.translatable("mchangehighlighter.config.categories.main.options.distance.name"))
@@ -102,12 +99,16 @@ public class MConfig {
                                         .range(4, 2048))
                                 .build())
                         .option(LabelOption.createBuilder()
-                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.togglekey", MChangeHighlighter.toggleKey.getBoundKeyLocalizedText()))
-                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.togglekey.notice").formatted(Formatting.GRAY))
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyToggle", MChangeHighlighter.keyToggle.getBoundKeyLocalizedText()))
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyNoteNoChange").formatted(Formatting.GRAY))
                                 .build())
                         .option(LabelOption.createBuilder()
-                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.clearkey", MChangeHighlighter.clearKey.getBoundKeyLocalizedText()))
-                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.clearkey.notice").formatted(Formatting.GRAY))
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyClear", MChangeHighlighter.keyClear.getBoundKeyLocalizedText()))
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyNoteNoChange").formatted(Formatting.GRAY))
+                                .build())
+                        .option(LabelOption.createBuilder()
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyTransparent", MChangeHighlighter.keyTransparent.getBoundKeyLocalizedText()))
+                                .line(Text.translatable("mchangehighlighter.config.categories.main.options.keyNoteNoChange").formatted(Formatting.GRAY))
                                 .build())
                         .option(ButtonOption.createBuilder()
                                 .name(Text.translatable("mchangehighlighter.config.categories.main.options.open-controls.name"))

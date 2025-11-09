@@ -15,11 +15,13 @@
 package org.kiva.mchangehighlighter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.client.MinecraftClient;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.kiva.mchangehighlighter.compat.ModMenuApiImpl;
@@ -33,6 +35,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static org.kiva.mchangehighlighter.MConfig.toggled_seethrough;
 import static org.kiva.mchangehighlighter.Parser.tryParseAndAdd;
 import static org.kiva.mchangehighlighter.Renderer.renderAll;
 
@@ -43,14 +46,14 @@ public class MChangeHighlighter {
     public static final MLogger LOG = new MLogger(MOD_NAME);
 
     public static boolean hasResetConfig = false;
-    private static boolean ENABLED = true;
-    private static volatile boolean toggled_render = false;
+    public static volatile boolean toggled_render = false;
 
     public static List<HighlightEntry> ENTRIES = new CopyOnWriteArrayList<>();
     public static final Deque<ChatEvent> EVENT_HISTORY = new ArrayDeque<>();
 
-    public static KeyBinding toggleKey;
-    public static KeyBinding clearKey;
+    public static KeyBinding keyToggle;
+    public static KeyBinding keyClear;
+    public static KeyBinding keyTransparent;
 
     public static MConfig config;
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("mchangehighlighter.json");
@@ -61,23 +64,27 @@ public class MChangeHighlighter {
         MConfig.HANDLER.load();
         loadConfig();
         // KBinds
-        KeyBinding.Category kb_category = new KeyBinding.Category(Identifier.of("mchangehighlighter","main"));
-        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.togglekey", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, kb_category));
-        clearKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.clearKey", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, kb_category));
+        KeyBinding.Category kb_category = KeyBinding.Category.create(Identifier.of("mchangehighlighter","main"));
+        keyToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyToggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, kb_category));
+        keyClear = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyClear", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, kb_category));
+        keyTransparent = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyTransparent", InputUtil.Type.KEYSYM, GLFW.GLFW_DONT_CARE, kb_category));
     }
 
     public static void afterMessage(Text message, boolean overlay) {
-        if (!ENABLED) return;
+        if (!MConfig.enabled) return;
         tryParseAndAdd(message.getString());
+    }
+
+    public static void afterCmd(CommandDispatcher dispatcher, CommandRegistryAccess access){
+        if (!MConfig.enabled) return;
     }
 
     /** Keybinds **/
     public static void afterClientTick(MinecraftClient client) {
-        if (!ENABLED) return;
-        if (toggleKey.wasPressed()) {
+        if (!MConfig.enabled) return;
+        if (keyToggle.wasPressed()) {
             toggled_render = !toggled_render;
-            if (client.player == null) {return;}
-            client.inGameHud.getChatHud().addMessage(Text.literal("MChangeHighlighter: " + (toggled_render ? "enabled" : "disabled")));
+            client.inGameHud.setOverlayMessage(toggled_render ? Text.translatable("key.keyToggle.on") : Text.translatable("key.keyToggle.off"), false);
             if (toggled_render) {
                 System.out.println("Rendering for "+ENTRIES.size()+" entries:");
                 for (HighlightEntry e : ENTRIES) {
@@ -85,17 +92,21 @@ public class MChangeHighlighter {
                 }
             }
         }
-        if (clearKey.wasPressed()) {
+        if (keyClear.wasPressed()) {
             ENTRIES.clear();
             EVENT_HISTORY.clear();
-            client.inGameHud.setOverlayMessage(Text.literal("MChangeHighlighter: Cleared"), false);
-            //client.inGameHud.getChatHud().addMessage(Text.literal("MChangeHighlighter: Cleared"));
+            client.inGameHud.setOverlayMessage(Text.translatable("key.keyClear.pressed"), false);
+        }
+        if (keyTransparent.wasPressed()) {
+            toggled_seethrough = !toggled_seethrough;
+            client.inGameHud.setOverlayMessage(toggled_seethrough ? Text.translatable("key.keyTransparent.on") : Text.translatable("key.keyTransparent.off"), false);
         }
     }
 
     public static void afterRender(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext context) {
-        if (!ENABLED) return;
-        if (!toggled_render) return; renderAll(context);
+        if (!MConfig.enabled) return;
+        if (!toggled_render) return;
+        renderAll(context);
     }
 
     // ----------------------------- Config -----------------------------
@@ -116,5 +127,6 @@ public class MChangeHighlighter {
         catch (IOException ex) {System.err.println("Failed to save MChangeHighlighter config: " + ex.getMessage());}
     }
 
-    public static void setEnabled(boolean enabled){ENABLED = enabled;}
+    public static void setEnabled(boolean enabled){MConfig.enabled = enabled;}
+    public static void setTransparent(boolean enabled){toggled_seethrough = enabled;}
 }

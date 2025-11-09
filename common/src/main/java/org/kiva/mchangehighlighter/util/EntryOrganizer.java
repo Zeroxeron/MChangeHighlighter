@@ -13,6 +13,8 @@
  */
 
 package org.kiva.mchangehighlighter.util;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import org.kiva.mchangehighlighter.ChatEvent;
 import org.kiva.mchangehighlighter.HighlightEntry;
 import org.kiva.mchangehighlighter.MConfig;
@@ -29,7 +31,6 @@ public class EntryOrganizer {
     public static void clean() {
         HashMap<String, HighlightEntry> seenEntries = new HashMap<>();
         for (HighlightEntry e : ENTRIES) {
-            if (!e.pos.isWithinDistance(e.pos, MConfig.defaultDistance)) continue;
             String ekey = e.pos.toString();
             if (seenEntries.containsKey(ekey)) {
                 if (config.materialColors.containsKey(seenEntries.get(ekey).blockName)) continue;  // skip if material

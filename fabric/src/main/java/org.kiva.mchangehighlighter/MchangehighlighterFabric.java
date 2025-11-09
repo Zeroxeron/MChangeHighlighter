@@ -15,6 +15,7 @@
 package org.kiva.mchangehighlighter;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
@@ -23,7 +24,7 @@ public class MchangehighlighterFabric implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MChangeHighlighter.init();
-        //ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryEvent) -> {MChangeHighlighter.register(dispatcher);}); // register client commands (soon)
+        ClientCommandRegistrationCallback.EVENT.register(MChangeHighlighter::afterCmd); // register client commands (soon)
         ClientTickEvents.END_CLIENT_TICK.register(MChangeHighlighter::afterClientTick); // keybindings
         ClientReceiveMessageEvents.GAME.register(MChangeHighlighter::afterMessage);     // chat parsing
         WorldRenderEvents.END_MAIN.register(MChangeHighlighter::afterRender);           // render
