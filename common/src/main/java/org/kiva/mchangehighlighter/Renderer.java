@@ -19,14 +19,12 @@ import org.joml.Matrix4f;
 
 import java.util.Locale;
 
-import static org.kiva.mchangehighlighter.MChangeHighlighter.ENTRIES;
-import static org.kiva.mchangehighlighter.MChangeHighlighter.config;
-import static org.kiva.mchangehighlighter.MConfig.toggled_seethrough;
+import static org.kiva.mchangehighlighter.MChangeHighlighter.*;
 
 public class Renderer {
     /** Classic rendering without mixins **/
     public static void renderAll(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext context) {
-        if (toggled_seethrough) return; // use mixing for render
+        if (toggled_seethrough && GL_safe) return; // use mixins for render
         if (context == null) return;
         Vec3d cam = context.gameRenderer().getCamera().getPos();
         Matrix4f matrices = context.matrices().peek().getPositionMatrix();
@@ -35,6 +33,7 @@ public class Renderer {
         VertexConsumer vc = consumers.getBuffer(RenderLayer.getLines());
         if (ENTRIES.isEmpty()) return;
         for (HighlightEntry e : ENTRIES) {loadOutlinesVc(vc, matrices, cam, e);}
+        if (!GL_safe && toggled_seethrough) {context.gameRenderer().render(RenderTickCounter.ONE, false);} // redraw layer (nether/end)
     }
 
     /** Outlining and adding to the vc **/

@@ -15,17 +15,16 @@
 package org.kiva.mchangehighlighter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.brigadier.CommandDispatcher;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.kiva.mchangehighlighter.compat.ModMenuApiImpl;
-import org.kiva.mchangehighlighter.util.MLogger;
 import org.lwjgl.glfw.GLFW;
 import java.io.IOException;
 import java.io.Reader;
@@ -35,18 +34,20 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.kiva.mchangehighlighter.MConfig.toggled_seethrough;
 import static org.kiva.mchangehighlighter.Parser.tryParseAndAdd;
 import static org.kiva.mchangehighlighter.Renderer.renderAll;
 
 public class MChangeHighlighter {
 
-    public static final String MOD_ID = "mchangehighlighter";
-    public static final String MOD_NAME = "MChangeHighlighter";
-    public static final MLogger LOG = new MLogger(MOD_NAME);
+    //public static final String MOD_ID = "mchangehighlighter";
+    //public static final String MOD_NAME = "MChangeHighlighter";
+    //public static final MLogger LOG = new MLogger(MOD_NAME);
 
-    public static boolean hasResetConfig = false;
+    public static volatile boolean toggled_seethrough = false;
     public static volatile boolean toggled_render = false;
+
+    // If the dimension is safe to use GL renderer (false for nether/end)
+    public static volatile boolean GL_safe = false; // “A hole in your hand is better than a hand in your hole.” - Sun tsu
 
     public static List<HighlightEntry> ENTRIES = new CopyOnWriteArrayList<>();
     public static final Deque<ChatEvent> EVENT_HISTORY = new ArrayDeque<>();
@@ -70,14 +71,14 @@ public class MChangeHighlighter {
         keyTransparent = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyTransparent", InputUtil.Type.KEYSYM, GLFW.GLFW_DONT_CARE, kb_category));
     }
 
-    public static void afterMessage(Text message, boolean overlay) {
+    public static void afterMessage(Text message, boolean ignored) {
         if (!MConfig.enabled) return;
         tryParseAndAdd(message.getString());
     }
 
-    public static void afterCmd(CommandDispatcher dispatcher, CommandRegistryAccess access){
-        if (!MConfig.enabled) return;
-    }
+    //public static void afterCmd(CommandDispatcher dispatcher, CommandRegistryAccess access){
+    //    if (!MConfig.enabled) return;
+    //}
 
     /** Keybinds **/
     public static void afterClientTick(MinecraftClient client) {
@@ -103,9 +104,11 @@ public class MChangeHighlighter {
         }
     }
 
-    public static void afterRender(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext context) {
+    public static void afterRender(WorldRenderContext context) {
         if (!MConfig.enabled) return;
         if (!toggled_render) return;
+        try {GL_safe = Objects.equals(ClientWorld.OVERWORLD, Objects.requireNonNull(context.gameRenderer().getClient().world).getRegistryKey());}
+        catch (NullPointerException ex) {GL_safe = false;}
         renderAll(context);
     }
 

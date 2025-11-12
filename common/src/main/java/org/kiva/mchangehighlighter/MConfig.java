@@ -30,11 +30,13 @@ import net.minecraft.util.Identifier;
 
 import java.util.Map;
 
+import static org.kiva.mchangehighlighter.MChangeHighlighter.toggled_seethrough;
+
 public class MConfig {
     //private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDir();
-    public static final String FILE_NAME = MChangeHighlighter.MOD_ID + ".json";
-    public static final String FILE_NAME_INVALID = MChangeHighlighter.MOD_ID + ".invalid.json";
-    public static final String FILE_NAME_OLD = MChangeHighlighter.MOD_ID + ".old.json";
+    //public static final String FILE_NAME = MChangeHighlighter.MOD_ID + ".json";
+    //public static final String FILE_NAME_INVALID = MChangeHighlighter.MOD_ID + ".invalid.json";
+    //public static final String FILE_NAME_OLD = MChangeHighlighter.MOD_ID + ".old.json";
 
     public static ConfigClassHandler<MConfig> HANDLER = ConfigClassHandler.createBuilder(MConfig.class)
             .id(Identifier.of("mchangehighlighter", "mconfig"))
@@ -67,8 +69,6 @@ public class MConfig {
     @SerialEntry
     public static boolean enabled = true;
     @SerialEntry
-    public static boolean toggled_seethrough = false;
-    @SerialEntry
     public static int defaultDistance = 512;
 
     public static Screen openConfigScreen(Screen parent) {
@@ -86,7 +86,7 @@ public class MConfig {
                                 .build())
                         .option(Option.<Boolean>createBuilder()
                                 .name(Text.translatable("key.keyTransparent"))
-                                .binding(MConfig.toggled_seethrough, () -> MConfig.toggled_seethrough, MChangeHighlighter::setTransparent)
+                                .binding(toggled_seethrough, () -> toggled_seethrough, MChangeHighlighter::setTransparent)
                                 .controller(opt -> BooleanControllerBuilder.create(opt)
                                         .coloured(true)
                                         .yesNoFormatter())
