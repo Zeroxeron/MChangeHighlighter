@@ -45,7 +45,7 @@ public class MChangeHighlighter {
     public static final MLogger LOG = new MLogger(MOD_NAME);
 
     public static volatile boolean toggled_seethrough = false;
-    public static volatile boolean toggled_render = false;
+    public static volatile boolean toggled_render = true;
 
     // If the dimension is safe to use GL renderer (false for nether/end)
     public static volatile boolean GL_safe = false; // “A hole in your hand is better than a hand in your hole.” - Sun tsu
