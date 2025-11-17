@@ -24,7 +24,7 @@ public class MchangehighlighterFabric implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MChangeHighlighter.init();
-        ClientCommandRegistrationCallback.EVENT.register(MChangeHighlighter::afterCmd); // register client commands (soon)
+        //ClientCommandRegistrationCallback.EVENT.register(MChangeHighlighter::afterCmd); // register client commands (not implemented)
         ClientTickEvents.END_CLIENT_TICK.register(MChangeHighlighter::afterClientTick); // keybindings
         ClientReceiveMessageEvents.GAME.register(MChangeHighlighter::afterMessage);     // chat parsing
         WorldRenderEvents.END_MAIN.register(MChangeHighlighter::afterRender);           // render

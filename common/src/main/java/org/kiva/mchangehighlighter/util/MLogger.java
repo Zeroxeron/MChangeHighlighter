@@ -11,62 +11,37 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  */
-
 package org.kiva.mchangehighlighter.util;
+
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.StackLocatorUtil;
+import org.apache.logging.log4j.LogManager;
 
 @SuppressWarnings("unused")
 public class MLogger {
     private final Logger logger;
 
-    public MLogger(Logger logger) {
-        this.logger = logger;
+    public MLogger(Logger mc_logger) {
+        this.logger = mc_logger;
     }
-
     public MLogger(String name) {
         this(LogManager.getLogger(name));
     }
 
     private String edit(Level level, String message) {
-        if (level == Level.DEBUG)
-            return String.format(
-                    "[%s/%s]: %s",
-                    logger.getName(),
-                    StackLocatorUtil.getCallerClass(4).getSimpleName(),
-                    message
-            );
+        if (level == Level.DEBUG) return String.format("[DEBUG-%s]: %s", logger.getName(), message);
         return String.format("[%s]: %s", logger.getName(), message);
     }
 
-    private void log(Level level, String message, Object... args) {
-        if (!logger.isEnabled(level)) return;
-        logger.log(level, edit(level, message), args);
-    }
-
-    public void trace(String message, Object... args) {
-        log(Level.TRACE, message, args);
-    }
-
+    private void log(Level level, String message, Object... args) {if (!logger.isEnabled(level)) return; logger.log(level, edit(level, message), args);}
+    public void trace(String message, Object... args) {log(Level.TRACE, message, args);}
     public void debug(String message, Object... args) {
         log(Level.DEBUG, message, args);
     }
-
     public void info(String message, Object... args) {
         log(Level.INFO, message, args);
     }
-
-    public void warn(String message, Object... args) {
-        log(Level.WARN, message, args);
-    }
-
-    public void error(String message, Object... args) {
-        log(Level.ERROR, message, args);
-    }
-
-    public void fatal(String message, Object... args) {
-        log(Level.FATAL, message, args);
-    }
+    public void warn(String message, Object... args) {log(Level.WARN, message, args);}
+    public void error(String message, Object... args) {log(Level.ERROR, message, args);}
+    public void fatal(String message, Object... args) {log(Level.FATAL, message, args);}
 }

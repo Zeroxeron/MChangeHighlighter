@@ -25,6 +25,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.kiva.mchangehighlighter.compat.ModMenuApiImpl;
+import org.kiva.mchangehighlighter.util.MLogger;
 import org.lwjgl.glfw.GLFW;
 import java.io.IOException;
 import java.io.Reader;
@@ -39,9 +40,9 @@ import static org.kiva.mchangehighlighter.Renderer.renderAll;
 
 public class MChangeHighlighter {
 
-    //public static final String MOD_ID = "mchangehighlighter";
-    //public static final String MOD_NAME = "MChangeHighlighter";
-    //public static final MLogger LOG = new MLogger(MOD_NAME);
+    public static final String MOD_ID = "mchangehighlighter";
+    public static final String MOD_NAME = "MChangeHighlighter";
+    public static final MLogger LOG = new MLogger(MOD_NAME);
 
     public static volatile boolean toggled_seethrough = false;
     public static volatile boolean toggled_render = false;

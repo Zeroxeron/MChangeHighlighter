@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'fabric-loom' version '1.13.3'
+    //id("net.neoforged.moddev") version("${nf_moddev}") apply(false)
+    //id("net.neoforged.licenser") version("${nf_licenser}") apply(false)
 }
 
 version = project.property('mod_version')
@@ -17,7 +19,7 @@ java {
 sourceSets {
     main {
         java {
-            srcDirs = ['common/src/main/java', 'fabric/src/main/java/']
+            srcDirs = ['common/src/main/java', 'fabric/src/main/java/']//, 'neoforge/src/main/java/']
         }
         resources {
             srcDirs = ['fabric/src/main/resources', 'common/src/main/resources']
@@ -28,6 +30,7 @@ sourceSets {
 repositories {
     mavenCentral()
     maven { url = 'https://maven.fabricmc.net/' }
+    //maven { url = "https://maven.neoforged.net/releases"}
     maven { url = "https://jitpack.io" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots"}
     maven { url "https://maven.terraformersmc.com/releases/" }
