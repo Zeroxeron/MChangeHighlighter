@@ -1,6 +1,11 @@
+<div align="center"><center>
+<img width="128" height="128" alt="icon" src="https://github.com/user-attachments/assets/40e45453-1b8c-4e26-8c37-471815147859"/>
+
 # MChangeHighlighter
 
 ## Now its much easier to do the CoreProtect investigation!
+
+</center></div>
 
 Completely Client-Side Fabric mod which helps Server Admins and Moderators by visualizing with outlines the blocks provided by CoreProtect plugin!
 Requires ModMenu (and CoreProtect on the server!)
