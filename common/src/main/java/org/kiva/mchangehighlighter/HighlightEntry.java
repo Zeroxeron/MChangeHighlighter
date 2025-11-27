@@ -24,4 +24,5 @@ public class HighlightEntry {
         this.blockName = blockName;
         this.action = action;
     }
+    public String toString() {return "["+pos.getX()+" "+pos.getZ()+" "+pos.getY()+"] "+action+" "+blockName;}
 }

@@ -21,7 +21,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.kiva.mchangehighlighter.compat.ModMenuApiImpl;
@@ -40,15 +39,12 @@ import static org.kiva.mchangehighlighter.Renderer.renderAll;
 
 public class MChangeHighlighter {
 
-    public static final String MOD_ID = "mchangehighlighter";
+    //public static final String MOD_ID = "mchangehighlighter";
     public static final String MOD_NAME = "MChangeHighlighter";
     public static final MLogger LOG = new MLogger(MOD_NAME);
 
     public static volatile boolean toggled_seethrough = false;
     public static volatile boolean toggled_render = true;
-
-    // If the dimension is safe to use GL renderer (false for nether/end)
-    public static volatile boolean GL_safe = false; // “A hole in your hand is better than a hand in your hole.” - Sun tsu
 
     public static List<HighlightEntry> ENTRIES = new CopyOnWriteArrayList<>();
     public static final Deque<ChatEvent> EVENT_HISTORY = new ArrayDeque<>();
@@ -67,9 +63,9 @@ public class MChangeHighlighter {
         loadConfig();
         // KBinds
         KeyBinding.Category kb_category = KeyBinding.Category.create(Identifier.of("mchangehighlighter","main"));
-        keyToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyToggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, kb_category));
-        keyClear = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyClear", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, kb_category));
-        keyTransparent = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.keyTransparent", InputUtil.Type.KEYSYM, GLFW.GLFW_DONT_CARE, kb_category));
+        keyToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.keyToggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, kb_category));
+        keyClear = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.keyClear", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, kb_category));
+        keyTransparent = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.mchangehighlighter.keyTransparent", InputUtil.Type.KEYSYM, GLFW.GLFW_DONT_CARE, kb_category));
     }
 
     public static void afterMessage(Text message, boolean ignored) {
@@ -86,7 +82,7 @@ public class MChangeHighlighter {
         if (!MConfig.enabled) return;
         if (keyToggle.wasPressed()) {
             toggled_render = !toggled_render;
-            client.inGameHud.setOverlayMessage(toggled_render ? Text.translatable("key.keyToggle.on") : Text.translatable("key.keyToggle.off"), false);
+            client.inGameHud.setOverlayMessage(toggled_render ? Text.translatable("key.mchangehighlighter.keyToggle.on") : Text.translatable("key.mchangehighlighter.keyToggle.off"), false);
             if (toggled_render) {
                 System.out.println("Rendering for "+ENTRIES.size()+" entries:");
                 for (HighlightEntry e : ENTRIES) {
@@ -97,19 +93,17 @@ public class MChangeHighlighter {
         if (keyClear.wasPressed()) {
             ENTRIES.clear();
             EVENT_HISTORY.clear();
-            client.inGameHud.setOverlayMessage(Text.translatable("key.keyClear.pressed"), false);
+            client.inGameHud.setOverlayMessage(Text.translatable("key.mchangehighlighter.keyClear.pressed"), false);
         }
         if (keyTransparent.wasPressed()) {
             toggled_seethrough = !toggled_seethrough;
-            client.inGameHud.setOverlayMessage(toggled_seethrough ? Text.translatable("key.keyTransparent.on") : Text.translatable("key.keyTransparent.off"), false);
+            client.inGameHud.setOverlayMessage(toggled_seethrough ? Text.translatable("key.mchangehighlighter.keyTransparent.on") : Text.translatable("key.mchangehighlighter.keyTransparent.off"), false);
         }
     }
 
     public static void afterRender(WorldRenderContext context) {
         if (!MConfig.enabled) return;
         if (!toggled_render) return;
-        try {GL_safe = Objects.equals(ClientWorld.OVERWORLD, Objects.requireNonNull(context.gameRenderer().getClient().world).getRegistryKey());}
-        catch (NullPointerException ex) {GL_safe = false;}
         renderAll(context);
     }
 

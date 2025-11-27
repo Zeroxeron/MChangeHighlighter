@@ -16,17 +16,13 @@ package org.kiva.mchangehighlighter;
 import net.minecraft.util.math.BlockPos;
 import java.util.Locale;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.kiva.mchangehighlighter.MChangeHighlighter.EVENT_HISTORY;
+import static org.kiva.mchangehighlighter.MConfig.*;
 import static org.kiva.mchangehighlighter.util.EntryOrganizer.clean;
 import static org.kiva.mchangehighlighter.util.EntryOrganizer.coordinate;
 
 public class Parser {
-    // Corrected regex pattern per your note
-    public static final Pattern COORD_PATTERN = Pattern.compile("\\(x(-?\\d+)/y(-?\\d+)/z(-?\\d+)(?:/([^)]*))?\\)");
-    public static final Pattern BLOCK_PATTERN = Pattern.compile("(?:placed|broke)\\s+(\\w+)");
-
     private static String stripFormatting(String s) {
         if (s == null || s.isEmpty()) return s == null ? null : "";
         StringBuilder sb = new StringBuilder(s.length());
@@ -52,7 +48,7 @@ public class Parser {
         if (e == null) {return;}
         if (e.type == ChatEvent.Type.POST_COORD || e.type == ChatEvent.Type.PRE_CORD) {
             Matcher coordM = COORD_PATTERN.matcher(lower);
-            boolean thisHasCoord = coordM.find();
+            //boolean thisHasCoord = coordM.find();
             int x = Integer.parseInt(coordM.group(1));
             int y = Integer.parseInt(coordM.group(2));
             int z = Integer.parseInt(coordM.group(3));

@@ -13,30 +13,28 @@
  */
 
 package org.kiva.mchangehighlighter.util;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
 import org.kiva.mchangehighlighter.ChatEvent;
 import org.kiva.mchangehighlighter.HighlightEntry;
-import org.kiva.mchangehighlighter.MConfig;
 import net.minecraft.util.math.BlockPos;
 import java.util.*;
 import java.util.regex.Matcher;
 import static org.kiva.mchangehighlighter.MChangeHighlighter.*;
-import static org.kiva.mchangehighlighter.Parser.BLOCK_PATTERN;
-import static org.kiva.mchangehighlighter.Parser.COORD_PATTERN;
+import static org.kiva.mchangehighlighter.MConfig.BLOCK_PATTERN;
+import static org.kiva.mchangehighlighter.MConfig.COORD_PATTERN;
 
 public class EntryOrganizer {
 
-    /** Also merges placed+removed into changed **/
+    /** Also merges placed+removed into changed, something is wrong somewhere, needs recheck and possibly recoding  **/
     public static void clean() {
         HashMap<String, HighlightEntry> seenEntries = new HashMap<>();
         for (HighlightEntry e : ENTRIES) {
+            LOG.info(e.toString());
             String ekey = e.pos.toString();
             if (seenEntries.containsKey(ekey)) {
                 if (config.materialColors.containsKey(seenEntries.get(ekey).blockName)) continue;  // skip if material
                 if ((Objects.equals(seenEntries.get(ekey).action, "placed") && (Objects.equals(e.action, "removed"))) ||
                         (Objects.equals(seenEntries.get(ekey).action, "removed") && (Objects.equals(e.action, "placed"))) ||
-                        (Objects.equals(seenEntries.get(ekey).action, "changed")) || (Objects.equals(e.action, "changed"))) {
+                        (Objects.equals(seenEntries.get(ekey).action, "changed") || (Objects.equals(e.action, "changed")))) {
                     e.action = "changed";
                     seenEntries.put(ekey, e); continue;} // set changed
                 seenEntries.put(ekey, e);
@@ -49,9 +47,9 @@ public class EntryOrganizer {
 
     /** Completes the render queue **/
     public static void coordinate() {
-        ChatEvent current = null;
+        ChatEvent current;
         HighlightEntry last_he = null;
-        BlockPos last_coords = null;
+        BlockPos last_coords;
         List<HighlightEntry> actions_list = new ArrayList<>();
         for (Iterator<ChatEvent> it = EVENT_HISTORY.descendingIterator(); it.hasNext(); ) {
             current = it.next();
@@ -106,7 +104,6 @@ public class EntryOrganizer {
                 last_he.blockName = abHere.group(1).toLowerCase(Locale.ROOT);
                 last_he.action = "removed";
                 ENTRIES.add(last_he); last_he = null;
-                continue;
             }
         }
     }

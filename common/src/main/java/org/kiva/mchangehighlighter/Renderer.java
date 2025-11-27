@@ -24,7 +24,6 @@ import static org.kiva.mchangehighlighter.MChangeHighlighter.*;
 public class Renderer {
     /** Classic rendering without mixins **/
     public static void renderAll(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext context) {
-        if (toggled_seethrough && GL_safe) return; // use mixins for render
         if (context == null) return;
         Vec3d cam = context.gameRenderer().getCamera().getPos();
         Matrix4f matrices = context.matrices().peek().getPositionMatrix();
@@ -33,7 +32,7 @@ public class Renderer {
         VertexConsumer vc = consumers.getBuffer(RenderLayer.getLines());
         if (ENTRIES.isEmpty()) return;
         for (HighlightEntry e : ENTRIES) {loadOutlinesVc(vc, matrices, cam, e);}
-        if (!GL_safe && toggled_seethrough) {context.gameRenderer().render(RenderTickCounter.ONE, false);} // redraw layer (nether/end)
+        if (toggled_seethrough) {context.gameRenderer().render(RenderTickCounter.ONE, false);} // quick-redraw the layer with outlines applied
     }
 
     /** Outlining and adding to the vc **/

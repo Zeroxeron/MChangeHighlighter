@@ -17,6 +17,7 @@ import com.google.gson.annotations.SerializedName;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
+import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
@@ -28,8 +29,12 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.awt.*;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import static org.kiva.mchangehighlighter.MChangeHighlighter.LOG;
 import static org.kiva.mchangehighlighter.MChangeHighlighter.toggled_seethrough;
 
 public class MConfig {
@@ -42,9 +47,21 @@ public class MConfig {
             .id(Identifier.of("mchangehighlighter", "mconfig"))
             .serializer(config -> GsonConfigSerializerBuilder.create(config)
                     .setPath(FabricLoader.getInstance().getConfigDir().resolve("mchangehighlighter.json"))
-                    .setJson5(true)
+                    .setJson5(false)
                     .build())
             .build();
+
+    @SerializedName("patternCoords")
+    static String patternCoords = "\\(x(-?\\d+)/y(-?\\d+)/z(-?\\d+)(?:/([^)]*))?\\)";
+    @SerializedName("patternBlock")
+    static String patternBlocks = "(?:placed|broke)\\s+(\\w+)";
+    @SerializedName("patternCoords")
+    static String keywordPlace = "placed";
+    @SerializedName("patternBlock")
+    static String keywordBroke = "broke";
+
+    public static Pattern COORD_PATTERN = Pattern.compile(patternCoords);
+    public static Pattern BLOCK_PATTERN = Pattern.compile(patternBlocks);
 
     @SerializedName("placedColor")
     String placedColor = "#bbff00";
@@ -71,6 +88,26 @@ public class MConfig {
     @SerialEntry
     public static int defaultDistance = 512;
 
+    public static void open_config() {
+        Path configFile = FabricLoader.getInstance().getConfigDir().resolve("mchangehighlighter.json");
+        if (!configFile.toFile().exists()) {return;} // just a safe check, should not ever trigger actually lol
+        if (Desktop.isDesktopSupported()) {
+            Desktop desktop = Desktop.getDesktop();
+            if (!desktop.isSupported(Desktop.Action.OPEN)) {return;}
+            try {
+                desktop.open(configFile.toFile());
+            } catch (java.io.IOException e) {
+                LOG.error("No config file to open");
+            }
+        }
+    }
+
+    public static void reload_config() {
+        MConfig.HANDLER.load();
+        COORD_PATTERN = Pattern.compile(patternCoords);
+        BLOCK_PATTERN = Pattern.compile(patternBlocks);
+    }
+
     public static Screen openConfigScreen(Screen parent) {
         return YetAnotherConfigLib.createBuilder()
                 .title(Text.translatable("mchangehighlighter.config.title"))
@@ -85,7 +122,7 @@ public class MConfig {
                                         .yesNoFormatter())
                                 .build())
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.translatable("key.keyTransparent"))
+                                .name(Text.translatable("key.mchangehighlighter.keyTransparent"))
                                 .binding(toggled_seethrough, () -> toggled_seethrough, MChangeHighlighter::setTransparent)
                                 .controller(opt -> BooleanControllerBuilder.create(opt)
                                         .coloured(true)
@@ -116,7 +153,46 @@ public class MConfig {
                                 .text(Text.empty())
                                 .action((screen, opt) -> MinecraftClient.getInstance().setScreen(new KeybindsScreen(parent, MinecraftClient.getInstance().options)))
                                 .build())
+                        .option(ButtonOption.createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.options.open-config.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.options.open-config.description")))
+                                .text(Text.empty())
+                                .action((screen, opt) -> open_config())
+                                .build())
+                        .option(ButtonOption.createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.options.reload.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.options.reload.description")))
+                                .text(Text.empty())
+                                .action((screen, opt) -> reload_config())
+                                .build())
+                        .build())
+                .category(ConfigCategory.createBuilder()
+                        .name(Text.translatable("mchangehighlighter.config.categories.main.parsing.name"))
+                        .option(Option.<String>createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.parsing.pattern-blocks.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.parsing.pattern-blocks.description")))
+                                .binding(patternBlocks, () -> patternBlocks, newValue -> patternBlocks = newValue)
+                                .controller(StringControllerBuilder::create)
+                                .build())
+                        .option(Option.<String>createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.parsing.pattern-coords.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.parsing.pattern-coords.description")))
+                                .binding(patternCoords, () -> patternCoords, newValue -> patternCoords = newValue)
+                                .controller(StringControllerBuilder::create)
+                                .build())
+                        .option(Option.<String>createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.parsing.place.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.parsing.place.description")))
+                                .binding(keywordPlace, () -> keywordPlace, newValue -> keywordPlace = newValue)
+                                .controller(StringControllerBuilder::create)
+                                .build())
+                        .option(Option.<String>createBuilder()
+                                .name(Text.translatable("mchangehighlighter.config.categories.main.parsing.broke.name"))
+                                .description(OptionDescription.of(Text.translatable("mchangehighlighter.config.categories.main.parsing.broke.description")))
+                                .binding(keywordBroke, () -> keywordBroke, newValue -> keywordBroke = newValue)
+                                .controller(StringControllerBuilder::create)
+                                .build())
                         .build())
                 .build().generateScreen(parent);
-        }
     }
+}

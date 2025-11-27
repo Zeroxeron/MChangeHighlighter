@@ -8,7 +8,7 @@ plugins {
 
 version = project.property('mod_version')
 group = project.property('maven_group')
-archivesBaseName = project.property('archives_base_name')
+archivesBaseName = project.property('archives_base_name') + "-" + project.property('minecraft_version')
 
 java {
     toolchain {

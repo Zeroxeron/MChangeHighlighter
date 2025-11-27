@@ -11,10 +11,11 @@
     "sources": "https://github.com/Zeroxeron/MChangeHighlighter",
     "issues": "https://github.com/Zeroxeron/MChangeHighlighter/issues"
   },
-  "license": "LGPL-3.0",
-  "mixins": [
-    "mchangehighlighter.mixins.json"
+  "contributors": [
+    "LeCitro (pl_pl)"
   ],
+  "license": "LGPL-3.0",
+  "mixins": [],
   "icon": "assets/mchangehighlighter/icon.png",
   "environment": "client",
   "entrypoints": {
